@@ -56,8 +56,8 @@ stmtOptions = defaultOptions
             f s = s
         in  f
     , fieldLabelModifier =
-        let f "thenBranch" = "left"
-            f "elseBranch" = "right"
+        let f "thenBranch" = "then"
+            f "elseBranch" = "else"
             f "nameToRead" = "name"
             f "valueToWrite" = "value"
             f s = s
