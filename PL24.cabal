@@ -71,6 +71,7 @@ executable PL24
     build-depends:    base ^>=4.18.0.0
                     , aeson
                     , text
+                    , mtl
 
     -- Directories containing source files.
     hs-source-dirs:   app

@@ -2,41 +2,67 @@
 module Compile where
 import StackMachine
 import Lang
+import Control.Monad.State
+import Common
+
+
+type CompileState = State Int StackMachine
 
 
 class Compile a where
-    compile :: a -> StackMachine
+    compile :: a -> CompileState
 
 
 instance Compile Expr where
-    compile (Const v) = pure $ StackConst v
-    compile (Var v) = pure $ StackVar v
-    compile (BinOp op l r) = compile l <> compile r <> pure (StackBinOp op)
+    compile :: Expr -> CompileState
+    compile (Const v) = return . pure $ StackConst v
+    compile (Var v) = return . pure $ StackVar v
+    compile (BinOp op l r) = do
+        l' <- compile l
+        r' <- compile r
+        return $ l' <> r' <> pure (StackBinOp op)
 
 
 instance Compile Stmt where
-    compile Skip = []
-    compile (Assn v e) = compile e <> pure (Set v)
-    compile (If c t e) = 
-        compile c <> 
-        pure (JumpZero "else") <> 
-        compile t <>
-        pure (Jump "end") <>
-        pure (Label "else") <>
-        compile e <>
-        pure (Label "end")
+    compile :: Stmt -> CompileState
+    compile Skip = return []
+    compile (Assn v e) = do
+        e' <- compile e
+        return $ e' <> pure (Set v)
+    compile (If c t e) = do
+        cnt <- get
+        put (cnt + 1)
+        c' <- compile c
+        t' <- compile t
+        e' <- compile e
+        return $
+            c' <>
+            [JumpZero $ "else" <.> cnt] <>
+            t' <>
+            [Jump $ "end" <.> cnt] <>
+            [Label $ "else" <.> cnt] <>
+            e' <>
+            [Label $ "end" <.> cnt]
     
-    compile (While c b) =
-        pure (Jump "while") <>
-        pure (Label "body") <>
-        compile b <>
-        pure (Label "while") <>
-        compile c <>
-        pure (JumpNotZero "body")
-
-    compile (Lang.Read v) = pure StackMachine.Read <> pure (Set v)
-    compile (Lang.Write e) = compile e <> pure StackMachine.Write
-
+    compile (While c b) = do
+        cnt <- get
+        put (cnt + 1)
+        c' <- compile c
+        b' <- compile b
+        return $
+            [Jump $ "while" <.> cnt] <>
+            [Label $ "body" <.> cnt] <>
+            b' <>
+            [Jump $ "while" <.> cnt] <>
+            c' <>
+            [JumpNotZero $ "while" <.> cnt]
+    
+    compile (Lang.Read v) = return $ pure StackMachine.Read <> pure (Set v)
+    compile (Lang.Write v) = do
+        v' <- compile v
+        return $ v' <> pure StackMachine.Write
+    
 
 instance Compile Program where
-    compile (Program p) = foldMap compile p
+    compile :: Program -> CompileState
+    compile (Program s) = mconcat <$> mapM compile s
