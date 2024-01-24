@@ -16,6 +16,9 @@ data StackCommand
     | JumpZero Label
     | JumpNotZero Label
     | Label Label
+    | Begin [Name]
+    | End
+    | Call Name
 
 
 instance ToJSON StackCommand where
@@ -29,5 +32,8 @@ instance ToJSON StackCommand where
     toJSON (JumpZero label) = object ["kind" .= ("JZ" :: Text), "value" .= label]
     toJSON (JumpNotZero label) = object ["kind" .= ("JNZ" :: Text), "value" .= label]
     toJSON (Label label) = object ["kind" .= ("LABEL" :: Text), "value" .= label]
+    toJSON (Begin vars) = object ["kind" .= ("BEGIN" :: Text), "value" .= vars]
+    toJSON End = toJSON ("END" :: Text)
+    toJSON (Call name) = object ["kind" .= ("CALL" :: Text), "value" .= name]
 
 type StackMachine = [StackCommand]

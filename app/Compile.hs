@@ -61,8 +61,33 @@ instance Compile Stmt where
     compile (Lang.Write v) = do
         v' <- compile v
         return $ v' <> pure StackMachine.Write
-    
+    compile (Lang.Call f args) = do
+        args' <- reverse <$> mapM compile args
+        return $ mconcat args' <> pure (StackMachine.Call f)
+
+
+instance Compile Function where
+    compile :: Function -> CompileState
+    compile (Fun name params body) = do
+        b' <- compile body
+        return $
+            [Label name] <>
+            [Begin params] <>
+            b' <>
+            [End]
+
+
+instance Compile ProgramBody where
+    compile :: ProgramBody-> CompileState
+    compile (ProgramBody s) = mconcat <$> mapM compile s
+
 
 instance Compile Program where
     compile :: Program -> CompileState
-    compile (Program s) = mconcat <$> mapM compile s
+    compile (Program fs b) = do
+        b' <- compile b
+        fs' <- mapM compile fs
+        return $ b' <>
+            [End] <>
+            mconcat fs'
+

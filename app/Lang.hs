@@ -18,14 +18,21 @@ data Expr
 data Stmt
     = Skip
     | Assn { lvalue :: Name, rvalue :: Expr }
-    | If { cond :: Expr, thenBranch :: Program, elseBranch :: Program }
-    | While { cond :: Expr, body :: Program }
+    | If { cond :: Expr, thenBranch :: ProgramBody, elseBranch :: ProgramBody }
+    | While { cond :: Expr, body :: ProgramBody }
     | Read { nameToRead :: Name }
     | Write { valueToWrite :: Expr }
+    | Call { func :: Name, args :: [Expr] }
     deriving (Eq, Show, Generic)
 
+data Function
+    = Fun { funName :: Name, params :: [Name], funBody :: ProgramBody }
+    deriving (Eq, Show, Generic)
 
-newtype Program = Program [Stmt] deriving (Eq, Show, Semigroup)
+newtype ProgramBody = ProgramBody [Stmt] deriving (Eq, Show, Semigroup)
+
+
+data Program = Program [Function] ProgramBody deriving (Eq, Show)
 
 
 exprOptions :: Options
@@ -69,10 +76,36 @@ instance FromJSON Stmt where
     parseJSON = genericParseJSON stmtOptions
 
 
+funOptions :: Options
+funOptions = defaultOptions
+    { sumEncoding = TaggedObject
+        { tagFieldName = "kind"
+        , contentsFieldName = undefined
+        }
+    , fieldLabelModifier =
+        let f "funBody" = "body"
+            f "funName" = "name"
+            f s = s
+        in  f
+    }
+
+
+instance FromJSON Function where
+    parseJSON = genericParseJSON funOptions
+
+
 instance FromJSON Program where
+    parseJSON=
+        withObject "Program" (\o -> do
+            fs :: [Function] <- o .: "funs"
+            p <- o .: "prog"
+            return $ Program fs p)
+
+
+instance FromJSON ProgramBody where
     parseJSON v =
         withObject "Program" (\o -> do
             "Seq" :: Text <- o .: "kind"
             left <- o .: "left"
             right <- o .: "right"
-            return $ left <> right) v <|> Program . pure <$> parseJSON v
+            return $ left <> right) v <|> ProgramBody . pure <$> parseJSON v
