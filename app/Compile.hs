@@ -31,7 +31,7 @@ instance Compile Stmt where
         return $ e' <> pure (Set v)
     compile (If c t e) = do
         cnt <- get
-        put (cnt + 1)
+        modify (+ 1)
         c' <- compile c
         t' <- compile t
         e' <- compile e
@@ -46,7 +46,7 @@ instance Compile Stmt where
     
     compile (While c b) = do
         cnt <- get
-        put (cnt + 1)
+        modify (+ 1)
         c' <- compile c
         b' <- compile b
         return $

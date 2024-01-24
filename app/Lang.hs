@@ -71,8 +71,8 @@ instance FromJSON Stmt where
 
 instance FromJSON Program where
     parseJSON v =
-        (withObject "Program" (\o -> do
+        withObject "Program" (\o -> do
             "Seq" :: Text <- o .: "kind"
             left <- o .: "left"
             right <- o .: "right"
-            return $ left <> right) v) <|> Program . pure <$> parseJSON v
+            return $ left <> right) v <|> Program . pure <$> parseJSON v
