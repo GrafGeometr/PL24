@@ -1,19 +1,15 @@
 module Main where
 import Data.Aeson
 import Lang
-import Compile
-import Control.Monad.State (evalState)
+import Interpret
 
 
 main :: IO ()
 main = do
-    filename <- getLine
-    Right program <- eitherDecodeFileStrict filename :: IO (Either String Program)
+    -- filename <- getLine
+    let filename = "input.json"
+    Right program <- eitherDecodeFileStrict filename :: IO (Either String Expr)
 
-    let compiled = evalState (compile program) 0
-
-    outputFilename <- getLine
-
-    encodeFile outputFilename compiled
+    runProg program
 
 
