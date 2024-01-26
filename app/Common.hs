@@ -24,6 +24,8 @@ binOps = Map.fromList $ first pack <$>
     , (">" , toInt (>))
     , ("==" , toInt (==))
     , ("<>" , toInt (/=))
+    , ("&" , (*))
+    , ("|" , max)
     ]
 
 runOp :: BinOp -> Value -> Value -> Value
